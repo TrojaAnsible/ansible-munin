@@ -1,0 +1,20 @@
+---
+# defaults file for ansible-munin
+#
+git_home: /opt/git
+
+github_base_url: 'https://github.com'
+# https://github.com/munin-monitoring/contrib.git
+github_repo: 'contrib'
+github_url: '{{ github_base_url }}/munin-monitoring/{{ github_repo }}.git'
+repo_dir: 'plugins/docker'
+
+munin_plugins_home: /usr/share/munin/plugins
+munin_plugins_active: /etc/munin/plugins
+munin_plugins_conf: /etc/munin/plugin-conf.d
+
+munin_plugins_wildcard_src_name: 'docker_'
+munin_plugins_wildcard_tgt_name: [containers, images, network, status, volumes]
+
+munin_plugins_name: [docker_cpu, docker_memory, docker_volumesize]
+#

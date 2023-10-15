@@ -1,0 +1,83 @@
+---
+
+- name: install munin-node package
+  apt:
+    name:
+      - munin-node
+      - munin-plugins-core
+      - libnet-cidr-perl
+    state: latest
+  check_mode: false
+
+
+- name: "add cidr address"
+  ansible.builtin.lineinfile:
+    path: "/etc/munin/munin-node.conf"
+    insertafter: '^# cidr_deny  192.0.2.42\/32'
+    line: 'cidr_allow 192.168.20.0/24'
+
+- name: "set listen address"
+  ansible.builtin.replace:
+    path: "/etc/munin/munin-node.conf"
+    regexp: '^host \*'
+    replace: "host {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+
+
+- name: "Clone {{ github_url }}"
+  ansible.builtin.git:
+    repo: "{{ github_url }}"
+    dest: "{{ git_home }}/{{ github_repo }}"
+
+
+- name: Copy wildcard file to munin plugins
+  ansible.builtin.copy:
+    src: "{{ git_home }}/{{ github_repo }}/{{ repo_dir }}/{{ munin_plugins_wildcard_src_name }}"
+    dest: "{{ munin_plugins_home }}/{{ munin_plugins_wildcard_src_name }}"
+    owner: root
+    group: root
+    mode: 0755
+    remote_src: true
+
+
+- name: Copy files to munin plugins
+  ansible.builtin.copy:
+    src: "{{ git_home }}/{{ github_repo }}/{{ repo_dir }}/{{ item }}"
+    dest: "{{ munin_plugins_home }}/{{ item }}"
+    owner: root
+    group: root
+    mode: 0755
+    remote_src: true
+  loop: "{{ munin_plugins_name }}"
+
+
+- name: link plugin to munin
+  ansible.builtin.file:
+    src: "{{ munin_plugins_home }}/{{ item }}"
+    dest: "{{ munin_plugins_active }}/{{ item }}"
+    state: link
+  loop: "{{ munin_plugins_name }}"
+
+
+- name: link wildcard plugin to munin
+  ansible.builtin.file:
+    src: "{{ munin_plugins_home }}/{{ munin_plugins_wildcard_src_name }}"
+    dest: "{{ munin_plugins_active }}/{{ munin_plugins_wildcard_src_name }}{{ item }}"
+    state: link
+  loop: "{{ munin_plugins_wildcard_tgt_name }}"
+
+
+- name: Copy docker config to munin config
+  ansible.builtin.copy:
+    src: "docker.munin"
+    dest: "{{ munin_plugins_conf }}/docker"
+    owner: root
+    group: root
+    mode: 0644
+
+
+# start service
+- name: Start munin-node.service
+  ansible.builtin.systemd:
+    name: munin-node
+    state: restarted
+#

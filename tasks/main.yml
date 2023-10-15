@@ -1,0 +1,5 @@
+---
+# tasks file for ansible-munin
+#
+- import_tasks: munin.yml
+#
